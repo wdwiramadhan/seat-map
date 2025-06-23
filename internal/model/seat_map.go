@@ -30,7 +30,7 @@ type SeatRow struct {
 	ID        uuid.UUID `json:"id"`
 	CabinID   uuid.UUID `json:"cabinId"`
 	RowNumber int       `json:"rowNumber"`
-	Seat      []Seat    `json:"seats"`
+	Seats     []Seat    `json:"seats"`
 	CreatedAt time.Time `json:"createdAt"`
 	UpdatedAt time.Time `json:"updatedAt"`
 }

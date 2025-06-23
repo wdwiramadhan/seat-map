@@ -68,8 +68,6 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 			&sID, &sSeatRowID, &storefrontCode, &available, &code, &sCreatedAt, &sUpdatedAt,
 		)
 
-
-
 		if err != nil {
 			return nil, err
 		}
@@ -123,6 +121,31 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 					}
 				}
 			}
+		}
+
+		var seat *model.Seat
+		if sID.Valid && seatRow != nil {
+			parsedSeatID, _ := uuid.Parse(sID.String)
+			seat = &model.Seat{
+				ID: parsedSeatID,
+				// SlotCharacteristics: slotChars,
+				StorefrontSlotCode: storefrontCode.String,
+				Available:          available.Bool,
+				Code:               code.String,
+				CreatedAt:          sCreatedAt.Time,
+				UpdatedAt:          sUpdatedAt.Time,
+			}
+
+			for i := range seatMap.Cabins {
+				if seatMap.Cabins[i].ID == cabin.ID {
+					for j := range seatMap.Cabins[i].SeatRows {
+						if seatMap.Cabins[i].SeatRows[j].ID == seatRow.ID {
+							seatMap.Cabins[i].SeatRows[j].Seats = append(seatMap.Cabins[i].SeatRows[j].Seats, *seat)
+						}
+					}
+				}
+			}
+
 		}
 
 	}
