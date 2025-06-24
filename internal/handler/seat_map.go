@@ -45,12 +45,22 @@ func (handler *SeatMapHandler) GetSeatMapByID(w http.ResponseWriter, req *http.R
 	seatMap, err := handler.SeatMapService.GetSeatMapByID(parsedSeatMapID)
 	if err != nil {
 		response := dto.APIResponse{
-			Code:    "ERROR",
-			Message: "ERROR",
+			Code:    "INTERNAL SERVER ERROR",
+			Message: err.Error(),
 			Data:    nil,
 		}
 
 		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(response)
+		return
+	}
+
+	if seatMap == nil {
+		response := dto.APIResponse{
+			Code:    "DATA_NOT_FOUND",
+			Message: "DATA_NOT_FOUND",
+			Data:    seatMap,
+		}
 		json.NewEncoder(w).Encode(response)
 		return
 	}

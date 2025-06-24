@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -32,7 +31,11 @@ func main() {
 
 	defer db.Close()
 
-	fmt.Println("Connected to the database!")
+	if err := db.Ping(context.Background()); err != nil {
+		log.Fatalln("Unable to connect to database:", err)
+	}
+
+	log.Println("Connected to the database!")
 
 	seatMapRepository := &repository.SeatMapRepository{DB: db}
 	seatMapService := &service.SeatMapService{SeatMapRepository: seatMapRepository}

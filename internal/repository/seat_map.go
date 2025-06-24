@@ -2,7 +2,6 @@ package repository
 
 import (
 	"context"
-	"database/sql"
 	"seat-map/internal/model"
 	"time"
 
@@ -16,14 +15,13 @@ type SeatMapRepository struct {
 
 func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatMap, error) {
 	query := `SELECT  sm.id AS seat_map_id, sm.aircraft, sm.created_at AS seat_map_created_at, sm.updated_at AS seat_map_updated_at,
-	c.id AS cabin_id, c.seat_map_id AS cabin_seat_map_id, c.deck, c.first_column, c.last_column, c.created_at AS cabin_created_at, c.updated_at AS cabin_updated_at,
-	sr.id AS seat_row_id, sr.cabin_id AS seat_row_cabin_id, sr.row_number, sr.created_at AS seat_row_created_at, sr.updated_at AS seat_row_updated_at,
-	s.id AS seat_id, s.seat_row_id AS seat_seat_row_id, s.storefront_slot_code, s.available, s.code, s.created_at AS seat_created_at, s.updated_at AS seat_updated_at
-	FROM seat_maps AS sm LEFT JOIN cabins as c ON sm.id = c.seat_map_id LEFT JOIN seat_rows AS sr ON c.id = sr.cabin_id LEFT JOIN seats AS s ON s.seat_row_id = sr.id
-	WHERE sm.id = $1`
+			c.id AS cabin_id, c.seat_map_id AS cabin_seat_map_id, c.deck, c.seat_columns, c.first_row, c.last_row, c.created_at AS cabin_created_at, c.updated_at AS cabin_updated_at,
+			sr.id AS seat_row_id, sr.cabin_id AS seat_row_cabin_id, sr.row_number, sr.created_at AS seat_row_created_at, sr.updated_at AS seat_row_updated_at,
+			s.id AS seat_id, s.seat_row_id AS seat_seat_row_id, s.storefront_slot_code, s.available, s.code, s.created_at AS seat_created_at, s.updated_at AS seat_updated_at
+			FROM seat_maps AS sm LEFT JOIN cabins as c ON sm.id = c.seat_map_id LEFT JOIN seat_rows AS sr ON c.id = sr.cabin_id LEFT JOIN seats AS s ON s.seat_row_id = sr.id
+			WHERE sm.id = $1`
 
 	rows, err := repo.DB.Query(context.Background(), query, seatMapID)
-
 	if err != nil {
 		return nil, err
 	}
@@ -40,30 +38,29 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 			smAircraft               string
 			smCreatedAt, smUpdatedAt time.Time
 
-			cID        sql.NullString
-			cSeatMapID sql.NullString
-			deck       sql.NullString
-			// seatColumns             pq.StringArray
-			firstColumn, lastColumn sql.NullInt64
-			cCreatedAt, cUpdatedAt  sql.NullTime
+			cID                    *string
+			cSeatMapID             *string
+			deck                   *string
+			seatColumns            []string
+			firstRow, lastRow      *int64
+			cCreatedAt, cUpdatedAt *time.Time
 
-			srID                     sql.NullString
-			srCabinID                sql.NullString
-			rowNum                   sql.NullInt64
-			srCreatedAt, srUpdatedAt sql.NullTime
+			srID                     *string
+			srCabinID                *string
+			rowNum                   *int64
+			srCreatedAt, srUpdatedAt *time.Time
 
-			sID        sql.NullString
-			sSeatRowID sql.NullString
-			// slotChars              pq.StringArray
-			storefrontCode         sql.NullString
-			available              sql.NullBool
-			code                   sql.NullString
-			sCreatedAt, sUpdatedAt sql.NullTime
+			sID                    *string
+			sSeatRowID             *string
+			storefrontCode         *string
+			available              *bool
+			code                   *string
+			sCreatedAt, sUpdatedAt *time.Time
 		)
 
 		err := rows.Scan(
 			&smID, &smAircraft, &smCreatedAt, &smUpdatedAt,
-			&cID, &cSeatMapID, &deck, &firstColumn, &lastColumn, &cCreatedAt, &cUpdatedAt,
+			&cID, &cSeatMapID, &deck, &seatColumns, &firstRow, &lastRow, &cCreatedAt, &cUpdatedAt,
 			&srID, &srCabinID, &rowNum, &srCreatedAt, &srUpdatedAt,
 			&sID, &sSeatRowID, &storefrontCode, &available, &code, &sCreatedAt, &sUpdatedAt,
 		)
@@ -80,19 +77,21 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 		}
 
 		var cabin *model.Cabin
-		if cID.Valid {
-			parsedCabinID, _ := uuid.Parse(cID.String)
+		if cID != nil {
+			parsedCabinID, _ := uuid.Parse(*cID)
 			if existing, ok := cabinMap[parsedCabinID]; ok {
 				cabin = existing
 			} else {
+				parsedSeatMapID, _ := uuid.Parse(*cSeatMapID)
 				cabin = &model.Cabin{
 					ID:          parsedCabinID,
-					Deck:        deck.String,
-					SeatColumns: make([]string, 0),
-					FirstColumn: int(firstColumn.Int64),
-					LastColumn:  int(lastColumn.Int64),
-					CreatedAt:   cCreatedAt.Time,
-					UpdatedAt:   cUpdatedAt.Time,
+					SeatMapID:   parsedSeatMapID,
+					Deck:        *deck,
+					SeatColumns: seatColumns,
+					FirstRow:    int(*firstRow),
+					LastRow:     int(*lastRow),
+					CreatedAt:   *cCreatedAt,
+					UpdatedAt:   *cUpdatedAt,
 				}
 
 				cabinMap[parsedCabinID] = cabin
@@ -101,16 +100,18 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 		}
 
 		var seatRow *model.SeatRow
-		if srID.Valid {
-			parsedSeatRowID, _ := uuid.Parse(srID.String)
+		if srID != nil {
+			parsedSeatRowID, _ := uuid.Parse(*srID)
 			if existing, ok := seatRowMap[parsedSeatRowID]; ok {
 				seatRow = existing
 			} else {
+				parsedCabinID, _ := uuid.Parse(*srCabinID)
 				seatRow = &model.SeatRow{
 					ID:        parsedSeatRowID,
-					RowNumber: int(rowNum.Int64),
-					CreatedAt: srCreatedAt.Time,
-					UpdatedAt: srUpdatedAt.Time,
+					CabinID:   parsedCabinID,
+					RowNumber: int(*rowNum),
+					CreatedAt: *srCreatedAt,
+					UpdatedAt: *srUpdatedAt,
 				}
 
 				seatRowMap[parsedSeatRowID] = seatRow
@@ -124,16 +125,17 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 		}
 
 		var seat *model.Seat
-		if sID.Valid && seatRow != nil {
-			parsedSeatID, _ := uuid.Parse(sID.String)
+		if sID != nil && seatRow != nil {
+			parsedSeatID, _ := uuid.Parse(*sID)
+			parsedSeatRowID, _ := uuid.Parse(*sSeatRowID)
 			seat = &model.Seat{
-				ID: parsedSeatID,
-				// SlotCharacteristics: slotChars,
-				StorefrontSlotCode: storefrontCode.String,
-				Available:          available.Bool,
-				Code:               code.String,
-				CreatedAt:          sCreatedAt.Time,
-				UpdatedAt:          sUpdatedAt.Time,
+				ID:                 parsedSeatID,
+				SeatRowID:          parsedSeatRowID,
+				StorefrontSlotCode: *storefrontCode,
+				Available:          *available,
+				Code:               *code,
+				CreatedAt:          *sCreatedAt,
+				UpdatedAt:          *sUpdatedAt,
 			}
 
 			for i := range seatMap.Cabins {

@@ -19,8 +19,8 @@ type Cabin struct {
 	SeatMapID   uuid.UUID `json:"seatMapId"`
 	Deck        string    `json:"deck"`
 	SeatColumns []string  `json:"seatColumns"`
-	FirstColumn int       `json:"firstColumn"`
-	LastColumn  int       `json:"lastColumn"`
+	FirstRow    int       `json:"firstRow"`
+	LastRow     int       `json:"lastRow"`
 	SeatRows    []SeatRow `json:"seatRows"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
@@ -36,12 +36,11 @@ type SeatRow struct {
 }
 
 type Seat struct {
-	ID                  uuid.UUID `json:"id"`
-	SeatRowID           uuid.UUID `json:"seatRowId"`
-	SlotCharacteristics []string  `json:"slotCharacteristics"`
-	StorefrontSlotCode  string    `json:"storefrontSlotCode"`
-	Available           bool      `json:"available"`
-	Code                string    `json:"code"`
-	CreatedAt           time.Time `json:"createdAt"`
-	UpdatedAt           time.Time `json:"updatedAt"`
+	ID                 uuid.UUID `json:"id"`
+	SeatRowID          uuid.UUID `json:"seatRowId"`
+	StorefrontSlotCode string    `json:"storefrontSlotCode"`
+	Available          bool      `json:"available"`
+	Code               string    `json:"code"`
+	CreatedAt          time.Time `json:"createdAt"`
+	UpdatedAt          time.Time `json:"updatedAt"`
 }

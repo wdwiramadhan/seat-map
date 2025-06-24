@@ -1,1 +1,7 @@
+DROP TABLE IF EXISTS seats;
+
+DROP TABLE IF EXISTS seat_rows;
+
+DROP TABLE IF EXISTS cabins;
+
 DROP TABLE IF EXISTS seat_maps;

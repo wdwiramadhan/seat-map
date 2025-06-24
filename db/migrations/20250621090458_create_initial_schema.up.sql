@@ -10,8 +10,8 @@ CREATE TABLE cabins (
     seat_map_id UUID NOT NULL,
     deck VARCHAR(50) NOT NULL,
     seat_columns VARCHAR(50)[] NOT NULL,
-    first_column INT NOT NULL,
-    last_column INT NOT NULL,
+    first_row INT NOT NULL,
+    last_row INT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (seat_map_id) REFERENCES seat_maps (id) ON DELETE CASCADE
@@ -29,7 +29,6 @@ CREATE TABLE seat_rows (
 CREATE TABLE seats (
     id UUID PRIMARY KEY,
     seat_row_id UUID NOT NULL,
-    slot_characteristics VARCHAR(50)[] NOT NULL,
     storefront_slot_code VARCHAR(50) NOT NULL,
     available BOOLEAN NOT NULL,
     code VARCHAR(50) NOT NULL,
