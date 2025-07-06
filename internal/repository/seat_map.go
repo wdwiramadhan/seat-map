@@ -41,7 +41,7 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 			cID                    *string
 			cSeatMapID             *string
 			deck                   *string
-			seatColumns            []string
+			seatColumns            *[]string
 			firstRow, lastRow      *int64
 			cCreatedAt, cUpdatedAt *time.Time
 
@@ -71,8 +71,11 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 
 		if seatMap == nil {
 			seatMap = &model.SeatMap{
-				ID: smID, Aircraft: smAircraft,
-				CreatedAt: smCreatedAt, UpdatedAt: smUpdatedAt,
+				ID:        smID,
+				Aircraft:  smAircraft,
+				Cabins:    make([]model.Cabin, 0),
+				CreatedAt: smCreatedAt,
+				UpdatedAt: smUpdatedAt,
 			}
 		}
 
@@ -83,11 +86,19 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 				cabin = existing
 			} else {
 				parsedSeatMapID, _ := uuid.Parse(*cSeatMapID)
+				var finalSeatColumns []string
+				if seatColumns != nil {
+					finalSeatColumns = *seatColumns
+				} else {
+					finalSeatColumns = []string{}
+				}
+
 				cabin = &model.Cabin{
 					ID:          parsedCabinID,
 					SeatMapID:   parsedSeatMapID,
 					Deck:        *deck,
-					SeatColumns: seatColumns,
+					SeatColumns: finalSeatColumns,
+					SeatRows:    make([]model.SeatRow, 0),
 					FirstRow:    int(*firstRow),
 					LastRow:     int(*lastRow),
 					CreatedAt:   *cCreatedAt,
@@ -109,6 +120,7 @@ func (repo *SeatMapRepository) GetSeatMapByID(seatMapID uuid.UUID) (*model.SeatM
 				seatRow = &model.SeatRow{
 					ID:        parsedSeatRowID,
 					CabinID:   parsedCabinID,
+					Seats:     make([]model.Seat, 0),
 					RowNumber: int(*rowNum),
 					CreatedAt: *srCreatedAt,
 					UpdatedAt: *srUpdatedAt,
